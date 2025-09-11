@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String        @id @default(cuid())
+  email     String        @unique
+  password  String
+  
+  // Parent/Guardian Information
+  firstName String?
+  lastName  String?
+  
+  // Child Information (Primary focus of the app)
+  childFirstName    String?
+  childLastName     String?
+  childDateOfBirth  DateTime?
+  childSex          Sex?
+  
+  // Location Information
+  zipCode   String?
+  
+  // Medication Reminder Settings
+  medicationRemindersEnabled Boolean @default(false)
+  dailyMedicationDoses      Int?
+  preferredMedicationTime   String? // Format: "9:00 AM"
+  
+  // Daily Log Reminder Settings
+  dailyLogRemindersEnabled  Boolean @default(false)
+  preferredDailyLogTime     String? // Format: "8:00 PM"
+  
+  // Onboarding Status
+  onboardingCompleted       Boolean @default(false)
+  currentOnboardingStep     String? // Track current step: "child_info", "location", "medications", "notifications"
+  
+  // System fields
+  role      Role          @default(PATIENT)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt @default(now())
+  
+  // Relations
+  entries   AsthmaEntry[]
+  medicationReminders MedicationReminder[]
+  onboardingProgress OnboardingStep[]
+  symptomLogs SymptomLog[]
+}
+
+model AsthmaEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  timestamp   DateTime @default(now())
+  symptoms    String[]
+  peakFlow    Int?
+  spo2        Int?
+  rescuePuffs Int?
+  notes       String?
+  
+  // Enhanced tracking
+  location    String? // Where symptoms occurred
+  triggers    String[] // Environmental triggers
+  severity    Int? // Overall severity 1-10
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  symptomLogs SymptomLog[]
+
+  @@index([userId, timestamp(sort: Desc)])
+}
+
+// Medication Reminder System
+model MedicationReminder {
+  id       String @id @default(cuid())
+  userId   String
+  name     String // e.g., "Controller Inhaler", "Rescue Inhaler"
+  dosage   String? // e.g., "2 puffs"
+  time     String // Format: "12:00 AM"
+  frequency MedicationFrequency @default(DAILY)
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, isActive])
+}
+
+// Onboarding Progress Tracking
+model OnboardingStep {
+  id        String @id @default(cuid())
+  userId    String
+  stepName  String // e.g., "personal_info", "medical_preferences", "notifications"
+  completed Boolean @default(false)
+  data      Json? // Store step-specific data
+  completedAt DateTime?
+  createdAt DateTime @default(now())
+  
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, stepName])
+  @@index([userId, completed])
+}
+
+// Enhanced AsthmaEntry for better symptom tracking
+model SymptomLog {
+  id          String   @id @default(cuid())
+  userId      String
+  entryId     String
+  symptom     String
+  severity    Int // 1-10 scale
+  timestamp   DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entry       AsthmaEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, timestamp])
+}
+
+enum Role {
+  PATIENT
+  ADMIN
+}
+enum Sex {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum MedicationFrequency {
+  DAILY
+  WEEKLY
+  AS_NEEDED
+  TWICE_DAILY
+  THREE_TIMES_DAILY
+}
+

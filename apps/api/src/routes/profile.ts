@@ -1,0 +1,586 @@
+import express from "express";
+import { PrismaClient } from "@prisma/client";
+import { authenticateToken } from "../middleware/auth";
+import { 
+  userProfileSchema, 
+  updateProfileSchema,
+  childInfoOnboardingSchema,
+  locationOnboardingSchema,
+  medicationOnboardingSchema,
+  notificationOnboardingSchema,
+  completeOnboardingSchema
+} from "../lib/validation";
+import { logger } from "../lib/logger";
+import { ZodError } from "zod";
+
+const router = express.Router();
+const prisma = new PrismaClient();
+
+// Apply authentication to all profile routes
+router.use(authenticateToken);
+
+/**
+ * GET /api/profile
+ * Get current user's complete profile
+ */
+router.get("/", async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.userId },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+        childFirstName: true,
+        childLastName: true,
+        childDateOfBirth: true,
+        childSex: true,
+        zipCode: true,
+        medicationRemindersEnabled: true,
+        dailyMedicationDoses: true,
+        preferredMedicationTime: true,
+        dailyLogRemindersEnabled: true,
+        preferredDailyLogTime: true,
+        onboardingCompleted: true,
+        currentOnboardingStep: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        error: "User not found",
+        code: "USER_NOT_FOUND",
+      });
+    }
+
+    res.json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    logger.error({ 
+      error: error instanceof Error ? error.message : "Unknown error",
+      endpoint: "/profile",
+      userId: req.user?.userId,
+    }, "Failed to get user profile");
+
+    res.status(500).json({
+      error: "Failed to get user profile",
+      code: "INTERNAL_ERROR",
+    });
+  }
+});
+
+/**
+ * PATCH /api/profile
+ * Update user profile
+ */
+router.patch("/", async (req, res) => {
+  try {
+    const validatedData = updateProfileSchema.parse(req.body);
+    
+    // Filter out undefined values for strict TypeScript
+    const updateData: any = {};
+    Object.entries(validatedData).forEach(([key, value]) => {
+      if (value !== undefined) {
+        updateData[key] = key === 'childDateOfBirth' && value ? new Date(value as string) : value;
+      }
+    });
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user!.userId },
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+        childFirstName: true,
+        childLastName: true,
+        childDateOfBirth: true,
+        childSex: true,
+        zipCode: true,
+        medicationRemindersEnabled: true,
+        dailyMedicationDoses: true,
+        preferredMedicationTime: true,
+        dailyLogRemindersEnabled: true,
+        preferredDailyLogTime: true,
+        onboardingCompleted: true,
+        currentOnboardingStep: true,
+        updatedAt: true,
+      },
+    });
+
+    logger.info({ 
+      userId: req.user!.userId,
+      updatedFields: Object.keys(validatedData),
+    }, "User profile updated");
+
+    res.json({
+      success: true,
+      message: "Profile updated successfully",
+      user: updatedUser,
+    });
+  } catch (error) {
+    logger.error({ 
+      error: error instanceof Error ? error.message : "Unknown error",
+      endpoint: "/profile PATCH",
+      userId: req.user?.userId,
+    }, "Failed to update user profile");
+
+    if (error instanceof ZodError) {
+      return res.status(400).json({
+        error: "Validation failed",
+        code: "VALIDATION_ERROR",
+        details: error.issues,
+      });
+    }
+
+    res.status(500).json({
+      error: "Failed to update profile",
+      code: "INTERNAL_ERROR",
+    });
+  }
+});
+
+/**
+ * POST /api/profile/onboarding/child-info
+ * Update child information during onboarding
+ */
+router.post("/onboarding/child-info", async (req, res) => {
+  try {
+    const validatedData = childInfoOnboardingSchema.parse(req.body);
+    
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user!.userId },
+      data: {
+        childFirstName: validatedData.childFirstName,
+        childLastName: validatedData.childLastName,
+        childDateOfBirth: new Date(validatedData.childDateOfBirth),
+        childSex: validatedData.childSex,
+        currentOnboardingStep: "location",
+      },
+    });
+
+    // Update onboarding progress
+    await prisma.onboardingStep.upsert({
+      where: {
+        userId_stepName: {
+          userId: req.user!.userId,
+          stepName: "child_info",
+        },
+      },
+      update: {
+        completed: true,
+        data: validatedData,
+        completedAt: new Date(),
+      },
+      create: {
+        userId: req.user!.userId,
+        stepName: "child_info",
+        completed: true,
+        data: validatedData,
+        completedAt: new Date(),
+      },
+    });
+
+    logger.info({ 
+      userId: req.user!.userId,
+      step: "child_info",
+    }, "Onboarding step completed");
+
+    res.json({
+      success: true,
+      message: "Child information saved successfully",
+      nextStep: "location",
+    });
+  } catch (error) {
+    logger.error({ 
+      error: error instanceof Error ? error.message : "Unknown error",
+      endpoint: "/profile/onboarding/child-info",
+      userId: req.user?.userId,
+    }, "Failed to save child information");
+
+    if (error instanceof ZodError) {
+      return res.status(400).json({
+        error: "Validation failed",
+        code: "VALIDATION_ERROR",
+        details: error.issues,
+      });
+    }
+
+    res.status(500).json({
+      error: "Failed to save child information",
+      code: "INTERNAL_ERROR",
+    });
+  }
+});
+
+/**
+ * POST /api/profile/onboarding/location
+ * Update location information during onboarding
+ */
+router.post("/onboarding/location", async (req, res) => {
+  try {
+    const validatedData = locationOnboardingSchema.parse(req.body);
+    
+    await prisma.user.update({
+      where: { id: req.user!.userId },
+      data: {
+        zipCode: validatedData.zipCode,
+        currentOnboardingStep: "medications",
+      },
+    });
+
+    // Update onboarding progress
+    await prisma.onboardingStep.upsert({
+      where: {
+        userId_stepName: {
+          userId: req.user!.userId,
+          stepName: "location",
+        },
+      },
+      update: {
+        completed: true,
+        data: validatedData,
+        completedAt: new Date(),
+      },
+      create: {
+        userId: req.user!.userId,
+        stepName: "location",
+        completed: true,
+        data: validatedData,
+        completedAt: new Date(),
+      },
+    });
+
+    logger.info({ 
+      userId: req.user!.userId,
+      step: "location",
+    }, "Onboarding step completed");
+
+    res.json({
+      success: true,
+      message: "Location information saved successfully",
+      nextStep: "medications",
+    });
+  } catch (error) {
+    logger.error({ 
+      error: error instanceof Error ? error.message : "Unknown error",
+      endpoint: "/profile/onboarding/location",
+      userId: req.user?.userId,
+    }, "Failed to save location information");
+
+    if (error instanceof ZodError) {
+      return res.status(400).json({
+        error: "Validation failed",
+        code: "VALIDATION_ERROR",
+        details: error.issues,
+      });
+    }
+
+    res.status(500).json({
+      error: "Failed to save location information",
+      code: "INTERNAL_ERROR",
+    });
+  }
+});
+
+/**
+ * POST /api/profile/onboarding/medications
+ * Update medication preferences during onboarding
+ */
+router.post("/onboarding/medications", async (req, res) => {
+  try {
+    const validatedData = medicationOnboardingSchema.parse(req.body);
+    
+    const updateData: any = {
+      medicationRemindersEnabled: validatedData.medicationRemindersEnabled,
+      currentOnboardingStep: "notifications",
+    };
+    if (validatedData.dailyMedicationDoses !== undefined) {
+      updateData.dailyMedicationDoses = validatedData.dailyMedicationDoses;
+    }
+    if (validatedData.preferredMedicationTime !== undefined) {
+      updateData.preferredMedicationTime = validatedData.preferredMedicationTime;
+    }
+
+    await prisma.user.update({
+      where: { id: req.user!.userId },
+      data: updateData,
+    });
+
+    // Update onboarding progress
+    await prisma.onboardingStep.upsert({
+      where: {
+        userId_stepName: {
+          userId: req.user!.userId,
+          stepName: "medications",
+        },
+      },
+      update: {
+        completed: true,
+        data: validatedData,
+        completedAt: new Date(),
+      },
+      create: {
+        userId: req.user!.userId,
+        stepName: "medications",
+        completed: true,
+        data: validatedData,
+        completedAt: new Date(),
+      },
+    });
+
+    logger.info({ 
+      userId: req.user!.userId,
+      step: "medications",
+    }, "Onboarding step completed");
+
+    res.json({
+      success: true,
+      message: "Medication preferences saved successfully",
+      nextStep: "notifications",
+    });
+  } catch (error) {
+    logger.error({ 
+      error: error instanceof Error ? error.message : "Unknown error",
+      endpoint: "/profile/onboarding/medications",
+      userId: req.user?.userId,
+    }, "Failed to save medication preferences");
+
+    if (error instanceof ZodError) {
+      return res.status(400).json({
+        error: "Validation failed",
+        code: "VALIDATION_ERROR",
+        details: error.issues,
+      });
+    }
+
+    res.status(500).json({
+      error: "Failed to save medication preferences",
+      code: "INTERNAL_ERROR",
+    });
+  }
+});
+
+/**
+ * POST /api/profile/onboarding/notifications
+ * Update notification preferences during onboarding
+ */
+router.post("/onboarding/notifications", async (req, res) => {
+  try {
+    const validatedData = notificationOnboardingSchema.parse(req.body);
+    
+    const updateData: any = {
+      dailyLogRemindersEnabled: validatedData.dailyLogRemindersEnabled,
+      currentOnboardingStep: null,
+      onboardingCompleted: true,
+    };
+    if (validatedData.preferredDailyLogTime !== undefined) {
+      updateData.preferredDailyLogTime = validatedData.preferredDailyLogTime;
+    }
+
+    await prisma.user.update({
+      where: { id: req.user!.userId },
+      data: updateData,
+    });
+
+    // Update onboarding progress
+    await prisma.onboardingStep.upsert({
+      where: {
+        userId_stepName: {
+          userId: req.user!.userId,
+          stepName: "notifications",
+        },
+      },
+      update: {
+        completed: true,
+        data: validatedData,
+        completedAt: new Date(),
+      },
+      create: {
+        userId: req.user!.userId,
+        stepName: "notifications",
+        completed: true,
+        data: validatedData,
+        completedAt: new Date(),
+      },
+    });
+
+    logger.info({ 
+      userId: req.user!.userId,
+      step: "notifications",
+    }, "Onboarding completed");
+
+    res.json({
+      success: true,
+      message: "Onboarding completed successfully",
+      onboardingCompleted: true,
+    });
+  } catch (error) {
+    logger.error({ 
+      error: error instanceof Error ? error.message : "Unknown error",
+      endpoint: "/profile/onboarding/notifications",
+      userId: req.user?.userId,
+    }, "Failed to complete onboarding");
+
+    if (error instanceof ZodError) {
+      return res.status(400).json({
+        error: "Validation failed",
+        code: "VALIDATION_ERROR",
+        details: error.issues,
+      });
+    }
+
+    res.status(500).json({
+      error: "Failed to complete onboarding",
+      code: "INTERNAL_ERROR",
+    });
+  }
+});
+
+/**
+ * POST /api/profile/onboarding/complete
+ * Complete entire onboarding in one request
+ */
+router.post("/onboarding/complete", async (req, res) => {
+  try {
+    const validatedData = completeOnboardingSchema.parse(req.body);
+    
+    const updateData: any = {
+      childFirstName: validatedData.childFirstName,
+      childLastName: validatedData.childLastName,
+      childDateOfBirth: new Date(validatedData.childDateOfBirth),
+      childSex: validatedData.childSex,
+      zipCode: validatedData.zipCode,
+      medicationRemindersEnabled: validatedData.medicationRemindersEnabled,
+      dailyLogRemindersEnabled: validatedData.dailyLogRemindersEnabled,
+      currentOnboardingStep: null,
+      onboardingCompleted: true,
+    };
+    if (validatedData.dailyMedicationDoses !== undefined) {
+      updateData.dailyMedicationDoses = validatedData.dailyMedicationDoses;
+    }
+    if (validatedData.preferredMedicationTime !== undefined) {
+      updateData.preferredMedicationTime = validatedData.preferredMedicationTime;
+    }
+    if (validatedData.preferredDailyLogTime !== undefined) {
+      updateData.preferredDailyLogTime = validatedData.preferredDailyLogTime;
+    }
+
+    await prisma.user.update({
+      where: { id: req.user!.userId },
+      data: updateData,
+    });
+
+    // Mark all onboarding steps as completed
+    const steps = ["child_info", "location", "medications", "notifications"];
+    for (const step of steps) {
+      await prisma.onboardingStep.upsert({
+        where: {
+          userId_stepName: {
+            userId: req.user!.userId,
+            stepName: step,
+          },
+        },
+        update: {
+          completed: true,
+          completedAt: new Date(),
+        },
+        create: {
+          userId: req.user!.userId,
+          stepName: step,
+          completed: true,
+          completedAt: new Date(),
+        },
+      });
+    }
+
+    logger.info({ 
+      userId: req.user!.userId,
+    }, "Complete onboarding finished");
+
+    res.json({
+      success: true,
+      message: "Onboarding completed successfully",
+      onboardingCompleted: true,
+    });
+  } catch (error) {
+    logger.error({ 
+      error: error instanceof Error ? error.message : "Unknown error",
+      endpoint: "/profile/onboarding/complete",
+      userId: req.user?.userId,
+    }, "Failed to complete onboarding");
+
+    if (error instanceof ZodError) {
+      return res.status(400).json({
+        error: "Validation failed",
+        code: "VALIDATION_ERROR",
+        details: error.issues,
+      });
+    }
+
+    res.status(500).json({
+      error: "Failed to complete onboarding",
+      code: "INTERNAL_ERROR",
+    });
+  }
+});
+
+/**
+ * GET /api/profile/onboarding/status
+ * Get current onboarding status
+ */
+router.get("/onboarding/status", async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.userId },
+      select: {
+        onboardingCompleted: true,
+        currentOnboardingStep: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        error: "User not found",
+        code: "USER_NOT_FOUND",
+      });
+    }
+
+    const onboardingSteps = await prisma.onboardingStep.findMany({
+      where: { userId: req.user!.userId },
+      select: {
+        stepName: true,
+        completed: true,
+        completedAt: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      onboardingCompleted: user.onboardingCompleted,
+      currentStep: user.currentOnboardingStep,
+      steps: onboardingSteps,
+    });
+  } catch (error) {
+    logger.error({ 
+      error: error instanceof Error ? error.message : "Unknown error",
+      endpoint: "/profile/onboarding/status",
+      userId: req.user?.userId,
+    }, "Failed to get onboarding status");
+
+    res.status(500).json({
+      error: "Failed to get onboarding status",
+      code: "INTERNAL_ERROR",
+    });
+  }
+});
+
+export default router;
