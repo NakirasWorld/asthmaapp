@@ -1,202 +1,198 @@
-# Asthma Tracking App
+# 🫁 Asthma Tracker App
 
-A comprehensive, HIPAA-compliant healthcare application for tracking asthma symptoms and providing health metrics to users.
+A comprehensive React Native mobile application with Node.js backend for tracking and managing childhood asthma symptoms, medications, and daily health logs.
 
-## 🏥 Overview
+## 🌟 Features
 
-This application helps patients track their asthma symptoms, peak flow measurements, oxygen saturation levels, and rescue medication usage. It provides valuable insights and trends to help manage asthma effectively while maintaining the highest standards of data security and privacy.
+### 📱 Mobile App (React Native + Expo)
+- **User Authentication**: Secure login/register with JWT
+- **Comprehensive Onboarding**: Child info, date of birth, location, medications, reminders
+- **Native Date/Time Pickers**: iOS and Android optimized time selection
+- **Medication Tracking**: Set up medication reminders and schedules
+- **Daily Log Reminders**: Customizable daily symptom logging alerts
+- **Success Flow**: Completion screens with logout functionality
+- **Modern UI**: Utility-based styling system (Tailwind-like)
+- **Responsive Design**: Works across different screen sizes
 
-## 🏗 Architecture
+### 🖥️ Backend API (Node.js + PostgreSQL)
+- **RESTful API**: Express.js with TypeScript
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: JWT-based secure authentication
+- **Data Validation**: Zod schema validation
+- **Health Data Management**: Secure storage of child health information
+- **CORS Support**: Cross-origin resource sharing configured
 
-### Backend (`apps/api/`)
-- **Express.js** with TypeScript
-- **PostgreSQL** database with Prisma ORM
-- **JWT** authentication
-- **Zod** validation
-- **Helmet** security headers
-- **Docker** containerization
+## 🛠️ Tech Stack
 
-### Mobile App (`apps/mobile/`)
-- **React Native** with **Expo** for cross-platform mobile development
+### Mobile App
+- **React Native** with Expo SDK 53+
 - **TypeScript** for type safety
-- **Native UI components** for optimal mobile experience
 - **Zustand** for state management
-- **Expo Secure Store** for encrypted storage
-- **React Hook Form** with Zod validation
+- **React Navigation** for routing
+- **AsyncStorage** for local data persistence
+- **Native Date/Time Pickers** for better UX
 
-## 🚀 Quick Start
+### Backend
+- **Node.js** with Express.js
+- **TypeScript** for type safety
+- **PostgreSQL** database
+- **Prisma ORM** for database management
+- **JWT** for authentication
+- **bcryptjs** for password hashing
+- **Zod** for input validation
+
+### Development Tools
+- **Docker** for containerized development
+- **ESLint** and **Prettier** for code quality
+- **Git** version control
+
+## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+
+- Node.js 18+ and npm
 - Docker and Docker Compose
-- PostgreSQL (or use Docker)
+- Expo CLI: `npm install -g @expo/cli`
+- Git
 
-### 1. Start the Database
+### 1. Clone the Repository
 ```bash
-docker-compose up -d
+git clone https://github.com/NakirasWorld/asthmaapp.git
+cd asthmaapp
 ```
 
-### 2. Set up the Backend
+### 2. Start the Backend API
 ```bash
 cd apps/api
 npm install
-npm run prisma:generate
-npm run prisma:migrate
-npm run dev
+docker-compose up -d  # Start PostgreSQL
+npx prisma migrate dev  # Run database migrations
+npm run dev  # Start API server on port 3001
 ```
 
-### 3. Set up the Mobile App
+### 3. Start the Mobile App
 ```bash
 cd apps/mobile
-npm install
-npm start
+npm install --legacy-peer-deps  # Install dependencies
+npx expo start --clear  # Start Expo development server
 ```
 
-### 4. Access the Application
-- Mobile App: Expo development server (scan QR code with Expo Go app)
-- Backend API: http://localhost:3001
-- Database: localhost:5432
+### 4. Run on Device/Simulator
+- **iOS**: Press `i` in terminal or scan QR code with Camera app
+- **Android**: Press `a` in terminal or scan QR code with Expo Go app
 
-## 🔒 HIPAA Compliance
+## 📁 Project Structure
 
-This application is designed with HIPAA compliance in mind:
-
-### Administrative Safeguards
-- Role-based access controls
-- User authentication and authorization
-- Audit logging and monitoring
-- Incident response procedures
-
-### Physical Safeguards
-- Secure hosting environment
-- Access controls and monitoring
-- Workstation security
-
-### Technical Safeguards
-- Encryption in transit and at rest
-- Access controls and audit logs
-- Data integrity and backup
-- Secure communication protocols
-
-## 📊 Features
-
-### Patient Features
-- **Symptom Tracking**: Record daily asthma symptoms
-- **Peak Flow Monitoring**: Track lung function measurements
-- **SpO2 Tracking**: Monitor oxygen saturation levels
-- **Medication Logging**: Record rescue inhaler usage
-- **Health Metrics**: View trends and patterns
-- **Data Export**: Download personal health data
-
-### Healthcare Provider Features
-- **Patient Overview**: View patient data and trends
-- **Alert System**: Get notified of concerning patterns
-- **Report Generation**: Create detailed health reports
-- **Treatment Recommendations**: Suggest interventions
-
-## 🛠 Development
-
-### Project Structure
 ```
-asthma-app/
+asthmaapp/
 ├── apps/
-│   ├── api/                 # Backend Express API
-│   │   ├── src/            # Source code
-│   │   ├── prisma/         # Database schema and migrations
-│   │   └── dist/           # Compiled JavaScript
-│   └── mobile/            # React Native mobile app
-│       ├── src/            # Source code
-│       └── public/         # Static assets
-├── docker-compose.yml      # Database configuration
-└── README.md              # This file
+│   ├── api/                 # Node.js Backend
+│   │   ├── src/
+│   │   │   ├── routes/      # API endpoints
+│   │   │   ├── lib/         # Utilities (auth, validation)
+│   │   │   ├── middleware/  # Express middleware
+│   │   │   └── index.ts     # Server entry point
+│   │   ├── prisma/          # Database schema & migrations
+│   │   └── package.json
+│   │
+│   └── mobile/              # React Native App
+│       ├── src/
+│       │   ├── screens/     # App screens
+│       │   ├── navigation/  # Navigation setup
+│       │   ├── services/    # API client
+│       │   ├── store/       # State management
+│       │   ├── styles/      # Utility styling system
+│       │   └── types/       # TypeScript types
+│       └── package.json
+│
+├── docker-compose.yml       # PostgreSQL container
+├── restart-dev.sh          # Development restart script
+└── README.md
 ```
 
-### Database Schema
-- **Users**: Patient and admin accounts
-- **AsthmaEntries**: Daily symptom and measurement records
-- **Sessions**: Authentication and security
-- **AuditLogs**: Compliance and monitoring
+## 🔧 Development Scripts
 
-### API Endpoints
-- `POST /auth/login` - User authentication
-- `POST /auth/register` - User registration
-- `GET /entries` - Fetch asthma entries
-- `POST /entries` - Create new entry
-- `PUT /entries/:id` - Update entry
-- `DELETE /entries/:id` - Delete entry
-
-## 🧪 Testing
-
-### Backend Testing
+### Backend (apps/api)
 ```bash
-cd apps/api
-npm test
+npm run dev        # Start development server
+npm run build      # Build for production
+npm run start      # Start production server
+npx prisma studio  # Database GUI
 ```
 
-### Frontend Testing
+### Mobile (apps/mobile)
 ```bash
-cd apps/frontend
-npm test
+npx expo start --clear     # Start with cache clear
+npx expo start --tunnel    # Start with tunnel (for testing)
+npx expo build:ios        # Build for iOS
+npx expo build:android    # Build for Android
 ```
 
-### Integration Testing
+### Root Directory
 ```bash
-# Start all services
-docker-compose up -d
-npm run dev:all
+./restart-dev.sh    # Restart both API and mobile servers
 ```
 
-## 📱 Mobile Support
+## 📱 App Flow
 
-The frontend is fully responsive and optimized for mobile devices:
-- Touch-friendly interface
-- Offline capability (PWA ready)
-- Mobile-optimized charts and visualizations
-- Biometric authentication support
+1. **Authentication**: Login or Register
+2. **Onboarding**:
+   - Child Information (name, sex)
+   - Date of Birth (native date picker)
+   - Location (zip code)
+   - Medication Setup
+   - Medication Time (native time picker)
+   - Daily Log Reminder Time (native time picker)
+   - Success Screen with logout option
+3. **Main App**: Health tracking dashboard
 
-## 🔧 Configuration
+## 🔒 Security Features
 
-### Environment Variables
+- JWT-based authentication
+- Password hashing with bcryptjs
+- Input validation with Zod schemas
+- CORS protection
+- Secure API endpoints
+- Data encryption in transit
 
-#### Backend (`apps/api/.env`)
-```env
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/asthma"
-JWT_SECRET="your-jwt-secret"
-NODE_ENV="development"
-```
+## 🌐 API Endpoints
 
-#### Frontend (`apps/frontend/.env.local`)
-```env
-NEXT_PUBLIC_API_URL="http://localhost:3001"
-NEXT_PUBLIC_APP_ENV="development"
-```
+### Authentication
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `GET /api/auth/profile` - Get user profile
 
-## 📈 Monitoring & Analytics
-
-- **Health Metrics**: Track improvement trends
-- **Symptom Patterns**: Identify triggers and patterns
-- **Medication Effectiveness**: Monitor rescue inhaler usage
-- **Quality of Life**: Track overall health improvements
-
-## 🚨 Security Considerations
-
-- All data is encrypted in transit and at rest
-- Regular security audits and penetration testing
-- Secure coding practices and dependency management
-- Incident response and breach notification procedures
-
-## 📄 License
-
-This project is proprietary and confidential. All rights reserved.
+### Onboarding
+- `POST /api/onboarding/child-info` - Submit child information
+- `POST /api/onboarding/location` - Submit location data
+- `POST /api/onboarding/medications` - Submit medication preferences
+- `POST /api/onboarding/notifications` - Submit notification preferences
+- `POST /api/onboarding/complete` - Complete onboarding
 
 ## 🤝 Contributing
 
-This is a private healthcare application. Please follow all security and compliance guidelines when contributing.
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes: `git commit -m 'Add amazing feature'`
+4. Push to branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
 
-## 📞 Support
+## 📄 License
 
-For technical support or questions about HIPAA compliance, please contact the development team.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👨‍💻 Author
+
+**NakirasWorld**
+- GitHub: [@NakirasWorld](https://github.com/NakirasWorld)
+- Repository: [asthmaapp](https://github.com/NakirasWorld/asthmaapp)
+
+## 🆘 Support
+
+If you encounter any issues or have questions:
+1. Check existing [Issues](https://github.com/NakirasWorld/asthmaapp/issues)
+2. Create a new issue with detailed description
+3. Include device/platform information and error logs
 
 ---
 
-**⚠️ Important**: This application handles sensitive health data. Always follow HIPAA guidelines and security best practices. Never commit sensitive data to version control.
+**Built with ❤️ for better childhood asthma management**
