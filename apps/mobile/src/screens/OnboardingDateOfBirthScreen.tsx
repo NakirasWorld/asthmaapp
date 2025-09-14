@@ -7,12 +7,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { utils, colors } from '../styles/tw';
+import { useOnboardingStore } from '../store/onboardingStore';
 
 interface OnboardingDateOfBirthScreenProps {
   onNext: (data: { childDateOfBirth: string }) => void;
@@ -20,9 +20,13 @@ interface OnboardingDateOfBirthScreenProps {
 }
 
 export default function OnboardingDateOfBirthScreen({ onNext, onBack }: OnboardingDateOfBirthScreenProps) {
+  const { data } = useOnboardingStore();
   const currentYear = new Date().getFullYear();
   const defaultDate = new Date(currentYear - 10, 5, 15); // 10 years ago, June 15th
-  const [selectedDate, setSelectedDate] = useState<Date>(defaultDate);
+  
+  // Initialize with stored date if available
+  const initialDate = data.childDateOfBirth ? new Date(data.childDateOfBirth) : defaultDate;
+  const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -60,14 +64,7 @@ export default function OnboardingDateOfBirthScreen({ onNext, onBack }: Onboardi
 
     // Create ISO string for the selected date
     const dateOfBirth = selectedDate.toISOString();
-    
-    setIsLoading(true);
-    
-    // Simulate API call delay
-    setTimeout(() => {
-      onNext({ childDateOfBirth: dateOfBirth });
-      setIsLoading(false);
-    }, 500);
+    onNext({ childDateOfBirth: dateOfBirth });
   };
 
   const isValidDate = selectedDate !== null;
@@ -230,18 +227,14 @@ export default function OnboardingDateOfBirthScreen({ onNext, onBack }: Onboardi
                 utils.py4,
                 utils.itemsCenter,
                 { marginTop: 'auto' },
-                (isValidDate && !isLoading) ? utils.bgPrimary : utils.bgGray300
+                isValidDate ? utils.bgPrimary : utils.bgGray300
               ]}
               onPress={handleNext}
-              disabled={!isValidDate || isLoading}
+              disabled={!isValidDate}
             >
-              {isLoading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={[utils.textWhite, utils.textLg, utils.fontSemibold]}>
-                  Next
-                </Text>
-              )}
+              <Text style={[utils.textWhite, utils.textLg, utils.fontSemibold]}>
+                Next
+              </Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

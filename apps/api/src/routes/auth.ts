@@ -44,7 +44,6 @@ router.post("/register", async (req, res) => {
         email: user.email,
         role: user.role,
         onboardingCompleted: user.onboardingCompleted,
-        currentOnboardingStep: user.currentOnboardingStep,
         createdAt: user.createdAt,
       },
       tokens: {
@@ -156,7 +155,6 @@ router.post("/login", async (req, res) => {
         email: user.email,
         role: user.role,
         onboardingCompleted: user.onboardingCompleted,
-        currentOnboardingStep: user.currentOnboardingStep,
         createdAt: user.createdAt,
       },
       tokens: {
@@ -293,7 +291,6 @@ router.get("/me", authenticateToken, async (req, res) => {
         email: user.email,
         role: user.role,
         onboardingCompleted: user.onboardingCompleted,
-        currentOnboardingStep: user.currentOnboardingStep,
         createdAt: user.createdAt,
       },
     });

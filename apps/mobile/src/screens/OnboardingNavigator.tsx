@@ -1,160 +1,205 @@
-import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
-import OnboardingChildInfoScreen from './OnboardingChildInfoScreen';
-import OnboardingDateOfBirthScreen from './OnboardingDateOfBirthScreen';
-import OnboardingLocationScreen from './OnboardingLocationScreen';
-import OnboardingMedicationScreen from './OnboardingMedicationScreen';
-import OnboardingMedicationTimeScreen from './OnboardingMedicationTimeScreen';
-import OnboardingDailyLogTimeScreen from './OnboardingDailyLogTimeScreen';
-import OnboardingSuccessScreen from './OnboardingSuccessScreen';
-import { ChildInfoData, LocationData, MedicationData, NotificationData } from '../types';
-import { api } from '../services/api';
+import React, { useState } from "react";
+import { View, StyleSheet, Alert } from "react-native";
+import OnboardingChildInfoScreen from "./OnboardingChildInfoScreen";
+import OnboardingDateOfBirthScreen from "./OnboardingDateOfBirthScreen";
+import OnboardingLocationScreen from "./OnboardingLocationScreen";
+import OnboardingMedicationScreen from "./OnboardingMedicationScreen";
+import OnboardingMedicationTimeScreen from "./OnboardingMedicationTimeScreen";
+import OnboardingDailyLogTimeScreen from "./OnboardingDailyLogTimeScreen";
+import OnboardingSuccessScreen from "./OnboardingSuccessScreen";
+import {
+  ChildInfoData,
+  LocationData,
+  MedicationData,
+  NotificationData,
+} from "../types";
+import { api } from "../services/api";
+import { useOnboardingStore } from "../store/onboardingStore";
+import { useAuthStore } from "../store/authStore";
 
 interface OnboardingNavigatorProps {
   onComplete: () => void;
   onLogout?: () => void;
 }
 
-type OnboardingStep = 'child_info' | 'date_of_birth' | 'location' | 'medications' | 'medication_time' | 'daily_log_time' | 'success';
+type OnboardingStep =
+  | "child_info"
+  | "date_of_birth"
+  | "location"
+  | "medications"
+  | "medication_time"
+  | "daily_log_time"
+  | "success";
 
-export default function OnboardingNavigator({ onComplete, onLogout }: OnboardingNavigatorProps) {
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>('child_info');
-  const [onboardingData, setOnboardingData] = useState<Partial<{
-    childInfo: ChildInfoData;
-    dateOfBirth: { childDateOfBirth: string };
-    location: LocationData;
-    medication: MedicationData;
-    medicationTime?: string;
-    notification: NotificationData;
-  }>>({});
+export default function OnboardingNavigator({
+  onComplete,
+  onLogout,
+}: OnboardingNavigatorProps) {
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>("child_info");
+  const {
+    updateChildInfo,
+    updateDateOfBirth,
+    updateLocation,
+    updateMedication,
+    updateMedicationTime,
+    updateDailyLogTime,
+    isStepComplete,
+    isAllDataComplete,
+    getCompleteData,
+    getRegistrationData,
+    isSubmitting,
+    setSubmitting,
+    setError,
+    error,
+    reset,
+  } = useOnboardingStore();
+  const { login } = useAuthStore(); // We'll use login after successful registration
 
   const handleChildInfoNext = (data: ChildInfoData) => {
-    setOnboardingData(prev => ({ ...prev, childInfo: data }));
-    setCurrentStep('date_of_birth');
+    updateChildInfo(data);
+    setCurrentStep("date_of_birth");
   };
 
-  const handleDateOfBirthNext = async (data: { childDateOfBirth: string }) => {
-    setOnboardingData(prev => ({ ...prev, dateOfBirth: data }));
-    
-    // Now we have both child info and date of birth, submit to API
-    const childInfoData = onboardingData.childInfo;
-    if (childInfoData) {
-      try {
-        await api.submitChildInfo({
-          ...childInfoData,
-          childDateOfBirth: data.childDateOfBirth,
-        });
-        setCurrentStep('location');
-      } catch (error) {
-        console.error('Error submitting child info:', error);
-        // Handle error - could show alert or retry
-        setCurrentStep('location'); // Continue for now
-      }
-    }
+  const handleDateOfBirthNext = (data: { childDateOfBirth: string }) => {
+    updateDateOfBirth(data.childDateOfBirth);
+    setCurrentStep("location");
   };
 
-  const handleLocationNext = async (zipCode: string) => {
-    const locationData: LocationData = { zipCode };
-    setOnboardingData(prev => ({ ...prev, location: locationData }));
-    
-    try {
-      await api.submitLocation(locationData);
-      setCurrentStep('medications');
-    } catch (error) {
-      console.error('Error submitting location:', error);
-      // Handle error - could show alert or retry
-      setCurrentStep('medications'); // Continue for now
-    }
+  const handleLocationNext = (zipCode: string) => {
+    updateLocation(zipCode);
+    setCurrentStep("medications");
   };
 
-  const handleMedicationNext = async (data: {
+  const handleMedicationNext = (data: {
     medicationRemindersEnabled: boolean;
     dailyMedicationDoses?: number;
   }) => {
-    const medicationData: MedicationData = {
-      medicationRemindersEnabled: data.medicationRemindersEnabled,
-      dailyMedicationDoses: data.dailyMedicationDoses,
-    };
-    setOnboardingData(prev => ({ ...prev, medication: medicationData }));
-    
-    try {
-      await api.submitMedications(medicationData);
-      // If medication reminders are enabled, go to time selection
-      if (data.medicationRemindersEnabled) {
-        setCurrentStep('medication_time');
-      } else {
-        // Skip medication time and go directly to daily log
-        setCurrentStep('daily_log_time');
-      }
-    } catch (error) {
-      console.error('Error submitting medication data:', error);
-      // Handle error - could show alert or retry
-      if (data.medicationRemindersEnabled) {
-        setCurrentStep('medication_time');
-      } else {
-        setCurrentStep('daily_log_time');
-      }
+    updateMedication(data);
+
+    // If medication reminders are enabled, go to time selection
+    if (data.medicationRemindersEnabled) {
+      setCurrentStep("medication_time");
+    } else {
+      // Skip medication time and go directly to daily log
+      setCurrentStep("daily_log_time");
     }
   };
 
   const handleMedicationTimeNext = (time: string) => {
-    setOnboardingData(prev => ({ ...prev, medicationTime: time }));
-    setCurrentStep('daily_log_time');
+    updateMedicationTime(time);
+    setCurrentStep("daily_log_time");
   };
 
   const handleDailyLogTimeNext = async (data: {
     dailyLogRemindersEnabled: boolean;
     preferredDailyLogTime?: string;
   }) => {
-    const notificationData: NotificationData = {
-      dailyLogRemindersEnabled: data.dailyLogRemindersEnabled,
-      preferredDailyLogTime: data.preferredDailyLogTime,
-    };
-    setOnboardingData(prev => ({ ...prev, notification: notificationData }));
-    
+    updateDailyLogTime(data);
+
+    // Now submit all onboarding data at once
+    await submitCompleteOnboarding();
+  };
+
+  const submitCompleteOnboarding = async () => {
+    if (!isAllDataComplete()) {
+      setError("Please complete all required fields");
+      return;
+    }
+
+    const completeData = getCompleteData();
+    const registrationData = getRegistrationData();
+
+    if (!completeData) {
+      setError("Invalid onboarding data");
+      return;
+    }
+
+    if (!registrationData) {
+      setError("Invalid registration data");
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+
     try {
-      await api.submitNotifications(notificationData);
-      // Complete onboarding
-      await api.completeOnboarding();
-      setCurrentStep('success');
+      // Use the new combined registration + onboarding API
+      const response = await api.registerWithOnboarding(
+        registrationData,
+        completeData
+      );
+
+      if (response.success && response.data) {
+        // Update auth store with the new user
+        await login(registrationData.email, registrationData.password);
+        setCurrentStep("success");
+        // Clear the onboarding data from storage since it's been submitted
+        // We don't reset here to allow the success screen to access data if needed
+      } else {
+        setError(
+          response.error || "Failed to complete registration and onboarding"
+        );
+        Alert.alert(
+          "Registration Error",
+          response.error ||
+            "Failed to create account and complete onboarding. Please try again.",
+          [{ text: "OK" }]
+        );
+      }
     } catch (error) {
-      console.error('Error completing onboarding:', error);
-      // Handle error - could show alert or retry
-      setCurrentStep('success'); // Continue for now
+      console.error("Error completing registration and onboarding:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Network error occurred";
+      setError(errorMessage);
+      Alert.alert(
+        "Connection Error",
+        "Unable to create account and complete onboarding. Please check your internet connection and try again.",
+        [
+          { text: "Retry", onPress: () => submitCompleteOnboarding() },
+          { text: "Cancel" },
+        ]
+      );
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleSuccessNext = () => {
+    // Clear onboarding data and complete
+    reset();
     onComplete();
   };
 
   const handleLogout = () => {
+    // Clear onboarding data on logout
+    reset();
     if (onLogout) {
       onLogout();
     }
   };
 
   const handleBack = () => {
+    const { data } = useOnboardingStore.getState();
+
     switch (currentStep) {
-      case 'date_of_birth':
-        setCurrentStep('child_info');
+      case "date_of_birth":
+        setCurrentStep("child_info");
         break;
-      case 'location':
-        setCurrentStep('date_of_birth');
+      case "location":
+        setCurrentStep("date_of_birth");
         break;
-      case 'medications':
-        setCurrentStep('location');
+      case "medications":
+        setCurrentStep("location");
         break;
-      case 'medication_time':
-        setCurrentStep('medications');
+      case "medication_time":
+        setCurrentStep("medications");
         break;
-      case 'daily_log_time':
+      case "daily_log_time":
         // Check if we came from medication_time or directly from medications
-        const medicationData = onboardingData.medication;
-        if (medicationData?.medicationRemindersEnabled) {
-          setCurrentStep('medication_time');
+        if (data.medicationRemindersEnabled) {
+          setCurrentStep("medication_time");
         } else {
-          setCurrentStep('medications');
+          setCurrentStep("medications");
         }
         break;
       default:
@@ -164,83 +209,79 @@ export default function OnboardingNavigator({ onComplete, onLogout }: Onboarding
 
   const renderCurrentStep = () => {
     switch (currentStep) {
-      case 'child_info':
+      case "child_info":
         return (
           <OnboardingChildInfoScreen
             onNext={handleChildInfoNext}
-            onBack={currentStep !== 'child_info' ? handleBack : undefined}
+            onBack={currentStep !== "child_info" ? handleBack : undefined}
           />
         );
-      
-      case 'date_of_birth':
+
+      case "date_of_birth":
         return (
           <OnboardingDateOfBirthScreen
             onNext={handleDateOfBirthNext}
             onBack={handleBack}
           />
         );
-      
-      case 'location':
+
+      case "location":
         return (
           <OnboardingLocationScreen
             onNext={handleLocationNext}
             onBack={handleBack}
           />
         );
-      
-      case 'medications':
+
+      case "medications":
         return (
           <OnboardingMedicationScreen
             onNext={handleMedicationNext}
             onBack={handleBack}
           />
         );
-      
-      case 'medication_time':
+
+      case "medication_time":
         return (
           <OnboardingMedicationTimeScreen
             onNext={handleMedicationTimeNext}
             onBack={handleBack}
           />
         );
-      
-      case 'daily_log_time':
+
+      case "daily_log_time":
         return (
           <OnboardingDailyLogTimeScreen
             onNext={handleDailyLogTimeNext}
             onBack={handleBack}
           />
         );
-      
-      case 'success':
+
+      case "success":
         return (
           <OnboardingSuccessScreen
             onNext={handleSuccessNext}
             onLogout={onLogout ? handleLogout : undefined}
           />
         );
-      
+
       default:
         return null;
     }
   };
 
-  return (
-    <View style={styles.container}>
-      {renderCurrentStep()}
-    </View>
-  );
+  return <View style={styles.container}>{renderCurrentStep()}</View>;
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   placeholder: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
   },
 });

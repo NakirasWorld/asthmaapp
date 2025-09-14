@@ -12,14 +12,15 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../store/authStore';
+import { useOnboardingStore } from '../store/onboardingStore';
 import { utils, colors } from '../styles/tw';
 
 interface RegisterScreenProps {
-  onRegisterSuccess: () => void;
+  onStartOnboarding: () => void; // Changed from onRegisterSuccess
   onSwitchToLogin: () => void;
 }
 
-export default function RegisterScreen({ onRegisterSuccess, onSwitchToLogin }: RegisterScreenProps) {
+export default function RegisterScreen({ onStartOnboarding, onSwitchToLogin }: RegisterScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -27,7 +28,8 @@ export default function RegisterScreen({ onRegisterSuccess, onSwitchToLogin }: R
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [hipaaNoticeAcknowledged, setHipaaNoticeAcknowledged] = useState(false);
-  const { register, isLoading, error } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(false);
+  const { setRegistrationData } = useOnboardingStore();
 
   const handleRegister = async () => {
     if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
@@ -62,17 +64,17 @@ export default function RegisterScreen({ onRegisterSuccess, onSwitchToLogin }: R
       return;
     }
 
-    try {
-      const success = await register(email, password, confirmPassword, termsAccepted, hipaaNoticeAcknowledged);
-      
-      if (success) {
-        // Navigation will happen automatically via auth state change
-      } else {
-        Alert.alert('Registration Failed', error || 'Registration failed');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Network error occurred');
-    }
+    // Store registration data locally and proceed to onboarding
+    setRegistrationData({
+      email: email.trim(),
+      password,
+      confirmPassword,
+      termsAccepted,
+      hipaaNoticeAcknowledged,
+    });
+
+    // Navigate to onboarding instead of creating account immediately
+    onStartOnboarding();
   };
 
   return (

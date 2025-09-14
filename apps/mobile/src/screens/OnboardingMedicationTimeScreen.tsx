@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { utils, colors } from '../styles/tw';
+import { useOnboardingStore } from '../store/onboardingStore';
 
 interface OnboardingMedicationTimeScreenProps {
   onNext: (time: string) => void;
@@ -22,18 +23,37 @@ const OnboardingMedicationTimeScreen: React.FC<OnboardingMedicationTimeScreenPro
   onNext,
   onBack,
 }) => {
+  const { data } = useOnboardingStore();
   const defaultTime = new Date();
   defaultTime.setHours(8, 0, 0, 0); // Default to 8:00 AM
   
-  const [selectedTime, setSelectedTime] = useState<Date>(defaultTime);
+  // Initialize with stored time if available
+  const initialTime = data.preferredMedicationTime 
+    ? (() => {
+        const [time, period] = data.preferredMedicationTime.split(' ');
+        const [hours, minutes] = time.split(':').map(Number);
+        const date = new Date();
+        let adjustedHours = hours;
+        if (period === 'PM' && hours !== 12) adjustedHours += 12;
+        if (period === 'AM' && hours === 12) adjustedHours = 0;
+        date.setHours(adjustedHours, minutes, 0, 0);
+        return date;
+      })()
+    : defaultTime;
+  
+  const [selectedTime, setSelectedTime] = useState<Date>(initialTime);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
+    // Format to match API expectation: "9:00 AM" or "12:30 PM"
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const isPM = hours >= 12;
+    const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    const displayMinutes = minutes.toString().padStart(2, '0');
+    const period = isPM ? 'PM' : 'AM';
+    
+    return `${displayHours}:${displayMinutes} ${period}`;
   };
 
   const handleTimeChange = (event: any, time?: Date) => {

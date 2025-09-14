@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { utils, colors } from '../styles/tw';
+import { useOnboardingStore } from '../store/onboardingStore';
 
 interface OnboardingDailyLogTimeScreenProps {
   onNext: (data: { dailyLogRemindersEnabled: boolean; preferredDailyLogTime?: string }) => void;
@@ -23,18 +24,37 @@ const OnboardingDailyLogTimeScreen: React.FC<OnboardingDailyLogTimeScreenProps> 
   onNext,
   onBack,
 }) => {
+  const { data, isSubmitting } = useOnboardingStore();
   const defaultTime = new Date();
   defaultTime.setHours(8, 0, 0, 0); // Default to 8:00 AM
   
-  const [selectedTime, setSelectedTime] = useState<Date>(defaultTime);
+  // Initialize with stored time if available
+  const initialTime = data.preferredDailyLogTime 
+    ? (() => {
+        const [time, period] = data.preferredDailyLogTime.split(' ');
+        const [hours, minutes] = time.split(':').map(Number);
+        const date = new Date();
+        let adjustedHours = hours;
+        if (period === 'PM' && hours !== 12) adjustedHours += 12;
+        if (period === 'AM' && hours === 12) adjustedHours = 0;
+        date.setHours(adjustedHours, minutes, 0, 0);
+        return date;
+      })()
+    : defaultTime;
+  
+  const [selectedTime, setSelectedTime] = useState<Date>(initialTime);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
+    // Format to match API expectation: "9:00 AM" or "12:30 PM"
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const isPM = hours >= 12;
+    const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    const displayMinutes = minutes.toString().padStart(2, '0');
+    const period = isPM ? 'PM' : 'AM';
+    
+    return `${displayHours}:${displayMinutes} ${period}`;
   };
 
   const handleTimeChange = (event: any, time?: Date) => {
@@ -201,7 +221,7 @@ const OnboardingDailyLogTimeScreen: React.FC<OnboardingDailyLogTimeScreenProps> 
           <View style={[utils.px6, utils.pb6, utils.bgWhite]}>
             <TouchableOpacity
               style={[
-                utils.bgPrimary,
+                isSubmitting ? utils.bgGray400 : utils.bgPrimary,
                 utils.roundedFull,
                 utils.justifyCenter,
                 utils.itemsCenter,
@@ -210,9 +230,10 @@ const OnboardingDailyLogTimeScreen: React.FC<OnboardingDailyLogTimeScreenProps> 
                 { width: '100%', height: 60 }
               ]}
               onPress={handleNext}
+              disabled={isSubmitting}
             >
               <Text style={[utils.textWhite, utils.textLg, utils.fontSemibold]}>
-                Confirm
+                {isSubmitting ? 'Completing...' : 'Complete Onboarding'}
               </Text>
             </TouchableOpacity>
           </View>

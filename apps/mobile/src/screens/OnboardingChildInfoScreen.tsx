@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { utils, colors } from '../styles/tw';
+import { useOnboardingStore } from '../store/onboardingStore';
 
 interface OnboardingChildInfoScreenProps {
   onNext: (data: {
@@ -25,9 +26,11 @@ interface OnboardingChildInfoScreenProps {
 }
 
 export default function OnboardingChildInfoScreen({ onNext, onBack }: OnboardingChildInfoScreenProps) {
-  const [childFirstName, setChildFirstName] = useState('');
-  const [childLastName, setChildLastName] = useState('');
-  const [childSex, setChildSex] = useState<'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY'>('MALE');
+  const { data } = useOnboardingStore();
+  
+  const [childFirstName, setChildFirstName] = useState(data.childFirstName || '');
+  const [childLastName, setChildLastName] = useState(data.childLastName || '');
+  const [childSex, setChildSex] = useState<'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY'>(data.childSex || 'MALE');
   const [showSexPicker, setShowSexPicker] = useState(false);
 
   const handleNext = () => {

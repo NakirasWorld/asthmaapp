@@ -4,7 +4,6 @@ export interface User {
   email: string;
   role: string;
   onboardingCompleted: boolean;
-  currentOnboardingStep?: string;
   createdAt: string;
 }
 

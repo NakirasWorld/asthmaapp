@@ -11,6 +11,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useOnboardingStore } from '../store/onboardingStore';
 
 interface OnboardingLocationScreenProps {
   onNext: (zipCode: string) => void;
@@ -21,7 +22,8 @@ const OnboardingLocationScreen: React.FC<OnboardingLocationScreenProps> = ({
   onNext,
   onBack,
 }) => {
-  const [zipCode, setZipCode] = useState('');
+  const { data } = useOnboardingStore();
+  const [zipCode, setZipCode] = useState(data.zipCode || '');
   const [error, setError] = useState('');
 
   const validateZipCode = (zip: string): boolean => {

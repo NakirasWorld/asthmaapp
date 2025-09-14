@@ -86,7 +86,6 @@ export class AuthService {
         email: true,
         role: true,
         onboardingCompleted: true,
-        currentOnboardingStep: true,
         createdAt: true,
         // Never select password
       },
@@ -112,7 +111,6 @@ export class AuthService {
         password: true, // Only for authentication
         role: true,
         onboardingCompleted: true,
-        currentOnboardingStep: true,
         createdAt: true,
       },
     });
@@ -126,7 +124,6 @@ export class AuthService {
         email: true,
         role: true,
         onboardingCompleted: true,
-        currentOnboardingStep: true,
         createdAt: true,
         // Never select password
       },

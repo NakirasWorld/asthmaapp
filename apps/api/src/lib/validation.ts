@@ -79,12 +79,6 @@ export const asthmaEntrySchema = z.object({
   severity: z.number().min(1).max(10).optional(), // 1-10 severity scale
 });
 
-// Onboarding Step Schema
-export const onboardingStepSchema = z.object({
-  stepName: z.string().min(1, "Step name required"),
-  completed: z.boolean().default(false),
-  data: z.record(z.string(), z.any()).optional(), // Flexible JSON data
-});
 
 // Specific Onboarding Schemas
 export const childInfoOnboardingSchema = z.object({
@@ -130,7 +124,6 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export type UserProfileInput = z.infer<typeof userProfileSchema>;
 export type MedicationReminderInput = z.infer<typeof medicationReminderSchema>;
 export type AsthmaEntryInput = z.infer<typeof asthmaEntrySchema>;
-export type OnboardingStepInput = z.infer<typeof onboardingStepSchema>;
 export type SymptomLogInput = z.infer<typeof symptomLogSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 

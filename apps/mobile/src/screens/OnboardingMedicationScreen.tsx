@@ -8,6 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useOnboardingStore } from '../store/onboardingStore';
 
 interface OnboardingMedicationScreenProps {
   onNext: (data: {
@@ -21,8 +22,11 @@ const OnboardingMedicationScreen: React.FC<OnboardingMedicationScreenProps> = ({
   onNext,
   onBack,
 }) => {
-  const [medicationRemindersEnabled, setMedicationRemindersEnabled] = useState<boolean | null>(null);
-  const [dailyDoses, setDailyDoses] = useState(1);
+  const { data } = useOnboardingStore();
+  const [medicationRemindersEnabled, setMedicationRemindersEnabled] = useState<boolean | null>(
+    data.medicationRemindersEnabled !== undefined ? data.medicationRemindersEnabled : null
+  );
+  const [dailyDoses, setDailyDoses] = useState(data.dailyMedicationDoses || 1);
 
   const handleYesNoSelection = (enabled: boolean) => {
     setMedicationRemindersEnabled(enabled);

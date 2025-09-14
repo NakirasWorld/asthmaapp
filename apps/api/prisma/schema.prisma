@@ -36,7 +36,6 @@ model User {
   
   // Onboarding Status
   onboardingCompleted       Boolean @default(false)
-  currentOnboardingStep     String? // Track current step: "child_info", "location", "medications", "notifications"
   
   // System fields
   role      Role          @default(PATIENT)
@@ -46,7 +45,6 @@ model User {
   // Relations
   entries   AsthmaEntry[]
   medicationReminders MedicationReminder[]
-  onboardingProgress OnboardingStep[]
   symptomLogs SymptomLog[]
 }
 
@@ -88,21 +86,6 @@ model MedicationReminder {
   @@index([userId, isActive])
 }
 
-// Onboarding Progress Tracking
-model OnboardingStep {
-  id        String @id @default(cuid())
-  userId    String
-  stepName  String // e.g., "personal_info", "medical_preferences", "notifications"
-  completed Boolean @default(false)
-  data      Json? // Store step-specific data
-  completedAt DateTime?
-  createdAt DateTime @default(now())
-  
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@unique([userId, stepName])
-  @@index([userId, completed])
-}
 
 // Enhanced AsthmaEntry for better symptom tracking
 model SymptomLog {
