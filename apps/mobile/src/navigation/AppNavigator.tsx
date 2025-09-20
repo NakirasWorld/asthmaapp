@@ -1,23 +1,23 @@
-import React from 'react'
-import { NavigationContainer } from '@react-navigation/native'
-import { createStackNavigator } from '@react-navigation/stack'
-import { useNavigation } from '@react-navigation/native'
-import { useAuthStore } from '../store/authStore'
+import React from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createStackNavigator } from "@react-navigation/stack";
+import { useNavigation } from "@react-navigation/native";
+import { useAuthStore } from "../store/authStore";
 
 // Import screens - we'll create wrapper components that handle the props
-import LoginScreen from '../screens/LoginScreen'
-import RegisterScreen from '../screens/RegisterScreen'
-import MainTabNavigator from './MainTabNavigator'
-import OnboardingNavigator from '../screens/OnboardingNavigator'
+import LoginScreen from "../screens/LoginScreen";
+import RegisterScreen from "../screens/RegisterScreen";
+import MainTabNavigator from "./MainTabNavigator";
+import OnboardingNavigator from "../screens/OnboardingNavigator";
 
 export type RootStackParamList = {
-  Login: undefined
-  Register: undefined
-  Onboarding: undefined
-  Main: undefined
-}
+  Login: undefined;
+  Register: undefined;
+  Onboarding: undefined;
+  Main: undefined;
+};
 
-const Stack = createStackNavigator<RootStackParamList>()
+const Stack = createStackNavigator<RootStackParamList>();
 
 // Wrapper components that handle the props using the auth store
 const LoginScreenWrapper = ({ navigation }: any) => {
@@ -27,57 +27,57 @@ const LoginScreenWrapper = ({ navigation }: any) => {
         // Navigation will happen automatically via auth state change
       }}
       onSwitchToRegister={() => {
-        navigation.navigate('Register')
+        navigation.navigate("Register");
       }}
     />
-  )
-}
+  );
+};
 
 const RegisterScreenWrapper = ({ navigation }: any) => {
   return (
     <RegisterScreen
       onStartOnboarding={() => {
         // Navigate to onboarding instead of waiting for auth state change
-        navigation.navigate('Onboarding')
+        navigation.navigate("Onboarding");
       }}
       onSwitchToLogin={() => {
-        navigation.navigate('Login')
+        navigation.navigate("Login");
       }}
     />
-  )
-}
+  );
+};
 
 const MainTabNavigatorWrapper = () => {
-  const { logout } = useAuthStore()
-  
-  return <MainTabNavigator />
-}
+  const { logout } = useAuthStore();
+
+  return <MainTabNavigator />;
+};
 
 const OnboardingScreenWrapper = () => {
-  const { user, refreshUserProfile, logout } = useAuthStore()
-  
+  const { user, refreshUserProfile, logout } = useAuthStore();
+
   const handleOnboardingComplete = async () => {
     // Refresh user data to get updated onboarding status
-    await refreshUserProfile()
-  }
-  
+    await refreshUserProfile();
+  };
+
   return (
-    <OnboardingNavigator 
-      onComplete={handleOnboardingComplete} 
+    <OnboardingNavigator
+      onComplete={handleOnboardingComplete}
       onLogout={logout}
     />
-  )
-}
+  );
+};
 
 const AppNavigator: React.FC = () => {
-  const { isAuthenticated, user } = useAuthStore()
+  const { isAuthenticated, user } = useAuthStore();
 
   // Determine initial route based on auth status and onboarding completion
   const getInitialRoute = () => {
-    if (!isAuthenticated) return 'Login'
-    if (user && !user.onboardingCompleted) return 'Onboarding'
-    return 'Main'
-  }
+    if (!isAuthenticated) return "Login";
+    if (user && !user.onboardingCompleted) return "Onboarding";
+    return "Main";
+  };
 
   return (
     <NavigationContainer>
@@ -85,11 +85,11 @@ const AppNavigator: React.FC = () => {
         initialRouteName={getInitialRoute()}
         screenOptions={{
           headerStyle: {
-            backgroundColor: '#7CB342',
+            backgroundColor: "#7CB342",
           },
-          headerTintColor: '#fff',
+          headerTintColor: "#fff",
           headerTitleStyle: {
-            fontWeight: 'bold',
+            fontWeight: "bold",
           },
         }}
       >
@@ -97,21 +97,21 @@ const AppNavigator: React.FC = () => {
           // Authenticated screens
           <>
             {user && !user.onboardingCompleted ? (
-              <Stack.Screen 
-                name="Onboarding" 
+              <Stack.Screen
+                name="Onboarding"
                 component={OnboardingScreenWrapper}
-                options={{ 
-                  title: 'Welcome',
+                options={{
+                  title: "Welcome",
                   headerShown: false,
                   gestureEnabled: false, // Prevent swiping back
                 }}
               />
             ) : (
-              <Stack.Screen 
-                name="Main" 
+              <Stack.Screen
+                name="Main"
                 component={MainTabNavigatorWrapper}
-                options={{ 
-                  title: 'Asthma Tracker',
+                options={{
+                  title: "Asthma Tracker",
                   headerShown: false, // Hide header since tabs have their own navigation
                 }}
               />
@@ -120,27 +120,27 @@ const AppNavigator: React.FC = () => {
         ) : (
           // Authentication screens (including onboarding for non-authenticated users)
           <>
-            <Stack.Screen 
-              name="Login" 
+            <Stack.Screen
+              name="Login"
               component={LoginScreenWrapper}
-              options={{ 
-                title: 'Welcome Back',
+              options={{
+                title: "Welcome Back",
                 headerShown: false,
               }}
             />
-            <Stack.Screen 
-              name="Register" 
+            <Stack.Screen
+              name="Register"
               component={RegisterScreenWrapper}
-              options={{ 
-                title: 'Create Account',
+              options={{
+                title: "Create Account",
                 headerShown: false,
               }}
             />
-            <Stack.Screen 
-              name="Onboarding" 
+            <Stack.Screen
+              name="Onboarding"
               component={OnboardingScreenWrapper}
-              options={{ 
-                title: 'Welcome',
+              options={{
+                title: "Welcome",
                 headerShown: false,
                 gestureEnabled: false, // Prevent swiping back
               }}
@@ -149,7 +149,7 @@ const AppNavigator: React.FC = () => {
         )}
       </Stack.Navigator>
     </NavigationContainer>
-  )
-}
+  );
+};
 
-export default AppNavigator
+export default AppNavigator;

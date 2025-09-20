@@ -1,28 +1,28 @@
-import React from 'react';
-import { View, TouchableOpacity, Text } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
-import { colors, utils } from '../styles/tw';
+import React from "react";
+import { View, TouchableOpacity, Text } from "react-native";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { Ionicons } from "@expo/vector-icons";
+import { colors, utils } from "../styles/tw";
 
-import DashboardScreen from '../screens/DashboardScreen';
-import MedsScreen from '../screens/MedsScreen';
-import LogScreen from '../screens/LogScreen';
-import InsightsScreen from '../screens/InsightsScreen';
-import EducationScreen from '../screens/EducationScreen';
+import DashboardScreen from "../screens/DashboardScreen";
+import MedsScreen from "../screens/MedsScreen";
+import LogScreen from "../screens/LogScreen";
+import InsightsScreen from "../screens/InsightsScreen";
+import EducationScreen from "../screens/EducationScreen";
 
 const Tab = createBottomTabNavigator();
 
 // Custom tab bar component for the special center Log button
 const CustomTabBar = ({ state, descriptors, navigation }: any) => {
   return (
-    <View style={{ position: 'relative' }}>
+    <View style={{ position: "relative" }}>
       {/* Floating Log Button */}
       {state.routes.map((route: any, index: number) => {
-        if (route.name === 'Log') {
+        if (route.name === "Log") {
           const isFocused = state.index === index;
           const onPress = () => {
             const event = navigation.emit({
-              type: 'tabPress',
+              type: "tabPress",
               target: route.key,
               canPreventDefault: true,
             });
@@ -33,45 +33,47 @@ const CustomTabBar = ({ state, descriptors, navigation }: any) => {
           };
 
           return (
-            <View 
+            <View
               key={index}
               style={{
-                position: 'absolute',
+                position: "absolute",
                 top: -28, // Float above the tab bar
-                left: '50%',
+                left: "50%",
                 transform: [{ translateX: -28 }], // Center the 56px button
                 zIndex: 10,
-                alignItems: 'center',
+                alignItems: "center",
               }}
             >
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={onPress}
                 style={[
                   utils.bgPrimary,
                   utils.itemsCenter,
                   utils.justifyCenter,
-                  { 
-                    width: 56, 
-                    height: 56, 
+                  {
+                    width: 56,
+                    height: 56,
                     borderRadius: 28,
                     shadowColor: colors.primary,
                     shadowOffset: { width: 0, height: 4 },
                     shadowOpacity: 0.3,
                     shadowRadius: 8,
                     elevation: 8,
-                  }
+                  },
                 ]}
               >
                 <Ionicons name="add" size={28} color={colors.white} />
               </TouchableOpacity>
-              <Text style={[
-                utils.textXs,
-                utils.mt1,
-                { 
-                  color: isFocused ? colors.primary : colors.gray500,
-                  fontWeight: isFocused ? '600' : '400'
-                }
-              ]}>
+              <Text
+                style={[
+                  utils.textXs,
+                  utils.mt1,
+                  {
+                    color: isFocused ? colors.primary : colors.gray500,
+                    fontWeight: isFocused ? "600" : "400",
+                  },
+                ]}
+              >
                 Log
               </Text>
             </View>
@@ -81,35 +83,40 @@ const CustomTabBar = ({ state, descriptors, navigation }: any) => {
       })}
 
       {/* Main Tab Bar */}
-      <View style={[
-        utils.flexRow,
-        utils.bgWhite,
-        { 
-          height: 90, // Increased height to accommodate floating button
-          paddingBottom: 34, // Extra padding for iPhone home indicator
-          paddingTop: 12,
-          borderTopWidth: 1,
-          borderTopColor: colors.gray200,
-          shadowColor: colors.black,
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
-          elevation: 8,
-        }
-      ]}>
+      <View
+        style={[
+          utils.flexRow,
+          utils.bgWhite,
+          {
+            height: 90, // Increased height to accommodate floating button
+            paddingBottom: 34, // Extra padding for iPhone home indicator
+            paddingTop: 12,
+            borderTopWidth: 1,
+            borderTopColor: colors.gray200,
+            shadowColor: colors.black,
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 8,
+          },
+        ]}
+      >
         {state.routes.map((route: any, index: number) => {
-          if (route.name === 'Log') {
+          if (route.name === "Log") {
             // Skip the Log button as it's rendered above
             return <View key={index} style={[utils.flex1]} />;
           }
 
           const { options } = descriptors[route.key];
-          const label = options.tabBarLabel !== undefined ? options.tabBarLabel : route.name;
+          const label =
+            options.tabBarLabel !== undefined
+              ? options.tabBarLabel
+              : route.name;
           const isFocused = state.index === index;
 
           const onPress = () => {
             const event = navigation.emit({
-              type: 'tabPress',
+              type: "tabPress",
               target: route.key,
               canPreventDefault: true,
             });
@@ -122,20 +129,20 @@ const CustomTabBar = ({ state, descriptors, navigation }: any) => {
           // Get icon name based on route
           let iconName: any;
           switch (route.name) {
-            case 'Home':
-              iconName = isFocused ? 'home' : 'home-outline';
+            case "Home":
+              iconName = isFocused ? "home" : "home-outline";
               break;
-            case 'Meds':
-              iconName = isFocused ? 'medical' : 'medical-outline';
+            case "Meds":
+              iconName = isFocused ? "medical" : "medical-outline";
               break;
-            case 'Insights':
-              iconName = isFocused ? 'analytics' : 'analytics-outline';
+            case "Insights":
+              iconName = isFocused ? "analytics" : "analytics-outline";
               break;
-            case 'Education':
-              iconName = isFocused ? 'library' : 'library-outline';
+            case "Education":
+              iconName = isFocused ? "library" : "library-outline";
               break;
             default:
-              iconName = 'help-outline';
+              iconName = "help-outline";
           }
 
           return (
@@ -144,19 +151,21 @@ const CustomTabBar = ({ state, descriptors, navigation }: any) => {
               onPress={onPress}
               style={[utils.flex1, utils.itemsCenter, utils.py1]}
             >
-              <Ionicons 
-                name={iconName} 
-                size={24} 
-                color={isFocused ? colors.primary : colors.gray500} 
+              <Ionicons
+                name={iconName}
+                size={24}
+                color={isFocused ? colors.primary : colors.gray500}
               />
-              <Text style={[
-                utils.textXs,
-                utils.mt1,
-                { 
-                  color: isFocused ? colors.primary : colors.gray500,
-                  fontWeight: isFocused ? '600' : '400'
-                }
-              ]}>
+              <Text
+                style={[
+                  utils.textXs,
+                  utils.mt1,
+                  {
+                    color: isFocused ? colors.primary : colors.gray500,
+                    fontWeight: isFocused ? "600" : "400",
+                  },
+                ]}
+              >
                 {label}
               </Text>
             </TouchableOpacity>
@@ -175,39 +184,39 @@ const MainTabNavigator: React.FC = () => {
         headerShown: false,
       }}
     >
-      <Tab.Screen 
-        name="Home" 
+      <Tab.Screen
+        name="Home"
         component={DashboardScreen}
         options={{
-          tabBarLabel: 'Home',
+          tabBarLabel: "Home",
         }}
       />
-      <Tab.Screen 
-        name="Meds" 
+      <Tab.Screen
+        name="Meds"
         component={MedsScreen}
         options={{
-          tabBarLabel: 'Meds',
+          tabBarLabel: "Meds",
         }}
       />
-      <Tab.Screen 
-        name="Log" 
+      <Tab.Screen
+        name="Log"
         component={LogScreen}
         options={{
-          tabBarLabel: 'Log',
+          tabBarLabel: "Log",
         }}
       />
-      <Tab.Screen 
-        name="Insights" 
+      <Tab.Screen
+        name="Insights"
         component={InsightsScreen}
         options={{
-          tabBarLabel: 'Insights',
+          tabBarLabel: "Insights",
         }}
       />
-      <Tab.Screen 
-        name="Education" 
+      <Tab.Screen
+        name="Education"
         component={EducationScreen}
         options={{
-          tabBarLabel: 'Education',
+          tabBarLabel: "Education",
         }}
       />
     </Tab.Navigator>
